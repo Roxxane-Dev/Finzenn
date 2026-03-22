@@ -5,6 +5,7 @@ import 'dashboard_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'subscriptions_screen.dart';
 import 'academy_screen.dart';
+import '../widgets/add_transaction_modal.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -34,7 +35,14 @@ class _MainNavigationState extends State<MainNavigation> {
         body: _screens[_current],
         floatingActionButton: _current == 0
             ? FloatingActionButton(
-                onPressed: () {},
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const AddTransactionModal(),
+                  );
+                },
                 backgroundColor: FinzennTheme.primaryBlue,
                 elevation: 10,
                 shape: const CircleBorder(),

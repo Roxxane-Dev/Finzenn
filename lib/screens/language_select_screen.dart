@@ -3,7 +3,7 @@ import '../theme/finzenn_theme.dart';
 import '../widgets/finzenn_cards.dart';
 import '../core/app_locale.dart';
 import '../main.dart';
-import 'main_navigation.dart';
+import 'auth/onboarding_screen.dart';
 
 class LanguageSelectScreen extends StatelessWidget {
   const LanguageSelectScreen({super.key});
@@ -58,8 +58,9 @@ class _LangOption extends StatelessWidget {
       onTap: () async {
         await appLocale.setLocale(code);
         if (context.mounted) {
+          // Después de elegir el idioma, pasamos por el onboarding visual 
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MainNavigation()),
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
           );
         }
       },

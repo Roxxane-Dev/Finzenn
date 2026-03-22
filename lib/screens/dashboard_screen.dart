@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/finzenn_theme.dart';
 import '../widgets/finzenn_cards.dart';
+import 'auth/profile_screen.dart';
+import '../services/transaction_service.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -14,23 +16,49 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: TransactionService().myTransactionsStream,
+      builder: (context, snapshot) {
+        final txs = snapshot.data ?? [];
+        double totalGastos = 0;
+        double totalIngresos = 0;
+        
+        for (var tx in txs) {
+          final amt = double.tryParse(tx['amount'].toString()) ?? 0;
+          if (tx['type'] == 'expense') {
+             totalGastos += amt;
+          } else {
+             totalIngresos += amt;
+          }
+        }
+        
+        final saldo = totalIngresos - totalGastos;
+        final limite = 5000.0;
+        final disponible = limite - totalGastos;
+        final gP = (totalGastos / limite).clamp(0.0, 1.0);
+
+        return SafeArea(
+          child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 22).copyWith(bottom: 120, top: 8),
         children: [
           // ── HEADER ───────────────────────────────────────────────
           Row(
             children: [
               // Avatar
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  gradient: FinzennTheme.blueGradient,
-                  shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: FinzennTheme.primaryBlue.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                },
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    gradient: FinzennTheme.blueGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: FinzennTheme.primaryBlue.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                  ),
+                  child: const Center(child: Text('🦉', style: TextStyle(fontSize: 22))),
                 ),
-                child: const Center(child: Text('🦉', style: TextStyle(fontSize: 22))),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -117,8 +145,8 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     const Text('SALDO TOTAL', style: TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                     const SizedBox(height: 8),
-                    const Text('\$12,450.00',
-                        style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1.5)),
+                    Text('\$${saldo.toStringAsFixed(2)}',
+                        style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1.5)),
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -141,9 +169,9 @@ class DashboardScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        _balanceStat(Icons.arrow_downward, 'Ingresos', '\$5,800.00'),
+                        _balanceStat(Icons.arrow_downward, 'Ingresos', '\$${totalIngresos.toStringAsFixed(2)}'),
                         const SizedBox(width: 24),
-                        _balanceStat(Icons.arrow_upward, 'Gastos', '\$3,350.00'),
+                        _balanceStat(Icons.arrow_upward, 'Gastos', '\$${totalGastos.toStringAsFixed(2)}'),
                       ],
                     ),
                   ],
@@ -219,24 +247,24 @@ class DashboardScreen extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('\$3,350', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: FinzennTheme.textDark)),
-                    const Text(' / \$5,000', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: FinzennTheme.textMuted)),
+                    Text('\$${totalGastos.toStringAsFixed(0)}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: FinzennTheme.textDark)),
+                    Text(' / \$${limite.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: FinzennTheme.textMuted)),
                     const Spacer(),
-                    const Text('67%', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: FinzennTheme.primaryBlue)),
+                    Text('${(gP * 100).toInt()}%', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: FinzennTheme.primaryBlue)),
                   ],
                 ),
                 const SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
-                    value: 0.67,
+                    value: gP,
                     minHeight: 10,
                     backgroundColor: FinzennTheme.bgColor,
                     valueColor: const AlwaysStoppedAnimation<Color>(FinzennTheme.primaryBlue),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('Puedes gastar \$1,650 más este mes', style: TextStyle(fontSize: 12, color: FinzennTheme.textMuted, fontWeight: FontWeight.w600)),
+                Text('Puedes gastar \$${disponible.toStringAsFixed(0)} más este mes', style: const TextStyle(fontSize: 12, color: FinzennTheme.textMuted, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -250,11 +278,11 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('DISPONIBLE HOY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: FinzennTheme.primaryBlue, letterSpacing: 1)),
-                      SizedBox(height: 6),
-                      Text('\$24.91', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: FinzennTheme.textDark)),
-                    ],
+                    children: [
+                    const Text('DISPONIBLE HOY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: FinzennTheme.primaryBlue, letterSpacing: 1)),
+                    const SizedBox(height: 6),
+                    Text('\$${(disponible > 0 ? disponible / 30 : 0).toStringAsFixed(2)}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: FinzennTheme.textDark)),
+                  ],
                   ),
                 ),
                 Container(
@@ -283,13 +311,17 @@ class DashboardScreen extends StatelessWidget {
           // ── HISTORIAL ─────────────────────────────────────────────
           _sectionHeader('HISTORIAL', 'Ver todo'),
           const SizedBox(height: 14),
-          _txItem(Icons.shopping_bag_outlined, 'Zara Home', 'Hace 2 horas · Decoración', '-\$45.20', false),
-          const SizedBox(height: 10),
-          _txItem(Icons.payments_outlined, 'Nómina Mensual', 'Ayer · Ingreso', '+\$2,800.00', true),
-          const SizedBox(height: 10),
-          _txItem(Icons.coffee_outlined, 'Starbucks', 'Ayer · Comida', '-\$5.50', false),
-          const SizedBox(height: 10),
-          _txItem(Icons.local_gas_station_outlined, 'Gasolinera Shell', 'Mar 18 · Transporte', '-\$45.00', false),
+          if (txs.isEmpty)
+             const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Center(child: Text("Aún no tienes movimientos", style: TextStyle(color: FinzennTheme.textMuted)))),
+          ...txs.take(5).map((t) {
+             final isPositive = t['type'] == 'income';
+             final sign = isPositive ? '+' : '-';
+             final amt = double.tryParse(t['amount'].toString()) ?? 0;
+             return Padding(
+               padding: const EdgeInsets.only(bottom: 10),
+               child: _txItem(isPositive ? Icons.payments_outlined : Icons.shopping_bag_outlined, t['category'] ?? 'Sin Categ.', t['description'] ?? 'Reciente', '$sign\$${amt.toStringAsFixed(2)}', isPositive),
+             );
+          }).toList(),
           const SizedBox(height: 28),
 
           // ── SUSCRIPCIONES (chip row) ──────────────────────────────
@@ -310,6 +342,7 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
     );
+   });
   }
 
   Widget _balanceStat(IconData icon, String label, String amount) {

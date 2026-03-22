@@ -4,6 +4,7 @@ import 'core/app_locale.dart';
 import 'theme/finzenn_theme.dart';
 import 'screens/language_select_screen.dart';
 import 'screens/main_navigation.dart';
+import 'screens/auth/auth_gate.dart';
 
 late AppLocale appLocale;
 
@@ -37,7 +38,7 @@ class _FinzennAppState extends State<FinzennApp> {
       title: 'Finzenn',
       theme: FinzennTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const LanguageSelectScreen(),
+      home: const AuthGate(),
     );
   }
 }
